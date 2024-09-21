@@ -32,6 +32,9 @@ class HomeController extends GetxController with BaseControllerMixin {
   //午休时长
   RxString noonBreakDuration = ''.obs;
 
+  //日历上显示的月份
+  late DateTime showDate;
+
   @override
   void onInit() {
     super.onInit();
@@ -48,13 +51,19 @@ class HomeController extends GetxController with BaseControllerMixin {
     hiveBox = await Hive.openBox('events');
     _saveTime();
     _runClockTimer();
-    updateEvent(DateTime.now());
+    onPageChange(DateTime.now());
+  }
+
+  void onPageChange(DateTime dateTime) {
+    showDate = dateTime;
+    updateEvent();
   }
 
   @override
   void onClose() {
     _clockTimer?.cancel();
     _clockTimer = null;
+    eventController.dispose();
     super.onClose();
   }
 
@@ -91,6 +100,10 @@ class HomeController extends GetxController with BaseControllerMixin {
     }
   }
 
+  Map? getEvent(DateTime date) {
+    return hiveBox.get(date.toDateString(), defaultValue: null);
+  }
+
   //更新当日上班时间
   void updateStartTime(DateTime time) {
     String nowDate = DateTime.now().toDateString();
@@ -101,20 +114,20 @@ class HomeController extends GetxController with BaseControllerMixin {
       nowDate,
       data,
     );
-    updateEvent(DateTime.now());
+    updateEvent();
   }
 
   void updateEndTime() {
     _saveTime();
-    updateEvent(DateTime.now());
+    updateEvent();
   }
 
   //设置Event
-  void updateEvent(DateTime dateTime) async {
+  void updateEvent() async {
     // 获取当前月份的第一天
-    DateTime firstDayOfMonth = DateTime(dateTime.year, dateTime.month, 1);
+    DateTime firstDayOfMonth = DateTime(showDate.year, showDate.month, 1);
     // 获取下个月的第一天
-    DateTime firstDayOfNextMonth = DateTime(dateTime.year, dateTime.month + 1, 1);
+    DateTime firstDayOfNextMonth = DateTime(showDate.year, showDate.month + 1, 1);
     // 计算当前月份的天数
     int daysInMonth = firstDayOfNextMonth.difference(firstDayOfMonth).inDays;
     // 创建一个列表，遍历每一天
@@ -137,9 +150,8 @@ class HomeController extends GetxController with BaseControllerMixin {
   }
 
   //获取午休时长
-  int getNoonBreakDuration() {
-    Duration difference = noonBreakEnd.value.difference(noonBreakStart.value);
-    return difference.inMinutes;
+  Duration _getNoonBreakDuration() {
+    return noonBreakEnd.value.difference(noonBreakStart.value);
   }
 
   //更新午休时长
@@ -149,6 +161,8 @@ class HomeController extends GetxController with BaseControllerMixin {
     String minutes = (difference.inMinutes % 60).toString().padLeft(2, '0');
     String seconds = (difference.inSeconds % 60).toString().padLeft(2, '0');
     noonBreakDuration.value = '$hours:$minutes:$seconds';
+    //同时刷新event
+    updateEvent();
   }
 
   //计算工时
@@ -173,8 +187,8 @@ class HomeController extends GetxController with BaseControllerMixin {
       //开始时间在午休之前 结束时间在午休结束之前 结束时间将改为 午休开始时间
       computeStart = start;
       computeEnd = noonStart;
-    } else if (start.isBefore(noonEnd) && end.isAfter(noonEnd)) {
-      //开始时间在午休结束之前 结束时间在午休结束之后 开始时间将改为 午休结束时间
+    } else if (start.isAfter(noonStart) && start.isBefore(noonEnd) && end.isAfter(noonEnd)) {
+      //开始时间在午休之后 午休结束之前 结束时间在午休结束之后 开始时间将改为 午休结束时间
       computeStart = noonEnd;
       computeEnd = end;
     } else if (start.isBefore(noonStart) && end.isAfter(noonEnd)) {
@@ -188,7 +202,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     }
     Duration difference = computeEnd.difference(computeStart);
     if (isNoonBreak) {
-      difference = difference - const Duration(hours: 2);
+      difference = difference - _getNoonBreakDuration();
     }
     return difference;
   }
@@ -209,7 +223,55 @@ class HomeController extends GetxController with BaseControllerMixin {
   }
 
   //时间字符串转DateTime
-  DateTime timeToDateTime(String time) {
+  DateTime timeToDateTime(String? time) {
+    time ??= '00:00:00';
     return DateTime.parse('2000-10-10 $time');
+  }
+
+  //补卡上班时间
+  void startTimeRemedy(DateTime date, DateTime time) {
+    String dateStr = date.toDateString();
+    var data = hiveBox.get(dateStr, defaultValue: null);
+    if (data == null) {
+      hiveBox.put(
+        dateStr,
+        {
+          'start': time.toTimeString(),
+          'end': null,
+        },
+      );
+    } else {
+      data['start'] = time.toTimeString();
+      hiveBox.put(
+        dateStr,
+        data,
+      );
+    }
+    //更新日历
+    updateEvent();
+  }
+
+  //补卡下班时间
+  void endTimeRemedy(DateTime date, DateTime time) {
+    String dateStr = date.toDateString();
+    var data = hiveBox.get(dateStr, defaultValue: null);
+    if (data == null) {
+      showError('请先补卡上班时间');
+    } else {
+      data['end'] = time.toTimeString();
+      hiveBox.put(
+        dateStr,
+        data,
+      );
+    }
+    //更新日历
+    updateEvent();
+  }
+
+  void cleanData(DateTime date) async {
+    await hiveBox.delete(date.toDateString());
+    final calendarEventData = eventController.getEventsOnDay(DateTime.parse(date.toDateString()));
+    eventController.removeAll(calendarEventData);
+    updateEvent();
   }
 }

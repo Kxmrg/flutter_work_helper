@@ -55,7 +55,7 @@ class HomePage extends GetView<HomeController> {
           }
         },
         onPageChange: (date, pageIndex) {
-          controller.updateEvent(date);
+          controller.onPageChange(date);
         },
         onCellTap: (events, date) {},
       ).tight(
@@ -99,7 +99,7 @@ class HomePage extends GetView<HomeController> {
       start = map['start'] as String?;
       end = map['end'] as String?;
     }
-    return <Widget>[
+    Widget widget = <Widget>[
       _buildCellTitle(
         date.dateFormat('d'),
         tag,
@@ -134,7 +134,123 @@ class HomePage extends GetView<HomeController> {
           color: Colors.orange,
           weight: FontWeight.bold,
         ),
-    ].toColumn(crossAxisAlignment: CrossAxisAlignment.start).padding(all: 10.w).card();
+    ].toColumn(crossAxisAlignment: CrossAxisAlignment.start).padding(all: 10.w);
+    if (tag < 0) {
+      //之前的时间可以补卡
+      return widget.inkWell(
+        onTap: () {
+          Get.dialog(_buildRemedyDialog(date, start, end));
+        },
+      ).card();
+    } else {
+      return widget.card();
+    }
+  }
+
+  Widget _buildRemedyDialog(DateTime date, String? start, String? end) {
+    Rx<String?> startTime = Rx<String?>(start);
+    Rx<String?> endTime = Rx<String?>(end);
+    return <Widget>[
+      Obx(() {
+        return <Widget>[
+          TextX.titleMedium(
+            date.toDateString(),
+            weight: FontWeight.bold,
+          ),
+          20.verticalSpace,
+          <Widget>[
+            TextX.titleLarge('上班时间：${startTime.value ?? ''}'),
+            ButtonX.secondary(
+              '修改',
+              onPressed: () {
+                Get.dialog(
+                  CustomHourPicker(
+                    title: '请选择上班时间',
+                    initDate: controller.timeToDateTime(startTime.value ?? '08:30:00'),
+                    date: controller.timeToDateTime(startTime.value ?? '08:30:00'),
+                    elevation: 2,
+                    positiveButtonText: '确认修改',
+                    negativeButtonText: '取消',
+                    onPositivePressed: (context, time) {
+                      startTime.value = time.toTimeString();
+                      controller.startTimeRemedy(date, time);
+                      Get.back();
+                    },
+                    onNegativePressed: (context) {
+                      Get.back();
+                    },
+                  ).padding(horizontal: 600.w),
+                );
+              },
+            ).padding(left: 20.w),
+          ].toRow(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+          10.verticalSpace,
+          <Widget>[
+            TextX.titleLarge('下班时间：${endTime.value ?? ''}'),
+            ButtonX.secondary(
+              '修改',
+              onPressed: () {
+                if (startTime.value == null) {
+                  showError('请先补卡上班时间');
+                  return;
+                }
+                Get.dialog(
+                  CustomHourPicker(
+                    title: '请选择下班时间',
+                    initDate: controller.timeToDateTime(endTime.value ?? '18:30:00'),
+                    date: controller.timeToDateTime(endTime.value ?? '18:30:00'),
+                    elevation: 2,
+                    positiveButtonText: '确认修改',
+                    negativeButtonText: '取消',
+                    onPositivePressed: (context, time) {
+                      Get.back();
+                      if (startTime.value == time.toTimeString()) {
+                        showError('上班时间不能与下班时间相同');
+                        return;
+                      }
+                      if (controller
+                          .timeToDateTime(startTime.value)
+                          .isAfter(controller.timeToDateTime(time.toTimeString()))) {
+                        showError('上班时间不能在下班时间之后');
+                        return;
+                      }
+                      endTime.value = time.toTimeString();
+                      controller.endTimeRemedy(date, time);
+                    },
+                    onNegativePressed: (context) {
+                      Get.back();
+                    },
+                  ).padding(horizontal: 600.w),
+                );
+              },
+            ).padding(left: 20.w),
+          ].toRow(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          ),
+        ]
+            .toColumn(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+            )
+            .padding(top: 25.h, horizontal: 30.w);
+      }),
+      ButtonX.icon(
+        Icons.close,
+        onPressed: () => Get.back(),
+      ).alignTopRight(),
+      ButtonX.outline(
+        '清空今日数据',
+        onPressed: () {
+          startTime.value = null;
+          endTime.value = null;
+          controller.cleanData(date);
+        },
+      ).alignBottomCenter(),
+    ].toStack().padding(all: 10.w).tight(width: 400.w, height: 230.h).card().center();
   }
 
   Widget _buildCellTitle(
