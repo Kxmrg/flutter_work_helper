@@ -1,0 +1,70 @@
+name: work_helper
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  getx_scaffold:
+    path: ../getx_scaffold
+  window_manager: ^0.4.2
+  calendar_view: ^1.2.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  time_pickerr: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  icons_launcher: ^3.0.0
+
+# flutter_icons 应用启动图标配置 https://pub-web.flutter-io.cn/packages/icons_launcher
+# flutter pub run icons_launcher:create
+icons_launcher:
+  image_path: "assets/icons/ic_launcher.png"
+  platforms:
+    windows:
+      enable: true
+    macos:
+      enable: true
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+
+  fonts:
+    - family: Montserrat
+      fonts:
+        - asset: assets/fonts/Montserrat-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Montserrat-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Montserrat-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Montserrat-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Montserrat-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Montserrat-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Montserrat-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Montserrat-SemiBold.ttf
+          weight: 800
+        - asset: assets/fonts/Montserrat-Black.ttf
+          weight: 900
+    - family: AlibabaHealth
+      fonts:
+        - asset: assets/fonts/AlibabaHealthFont2.0CN-45R.ttf
+          weight: 400
+        - asset: assets/fonts/AlibabaHealthFont2.0CN-85B.ttf
+          weight: 700
+
