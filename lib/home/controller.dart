@@ -12,12 +12,19 @@ class HomeController extends GetxController with BaseControllerMixin {
 
   static const String NOON_BREAK_START = 'NOON_BREAK_START';
   static const String NOON_BREAK_END = 'NOON_BREAK_END';
+  static const String WORK_DAYS = 'WORK_DAYS';
+  static const String WORK_HOURS = 'WORK_HOURS';
 
   final EventController eventController = EventController();
+  final TextEditingController workDaysController = TextEditingController();
+  final TextEditingController workHoursController = TextEditingController();
 
   late Box hiveBox;
 
   Timer? _clockTimer;
+
+  RxString version = ''.obs;
+
   //当前时间
   RxString currentTime = ''.obs;
   //今日上班时间
@@ -35,11 +42,25 @@ class HomeController extends GetxController with BaseControllerMixin {
   //日历上显示的月份
   late DateTime showDate;
 
+  //当月工作日天数
+  late RxInt workDays = 0.obs;
+
+  //每天工作时长
+  late RxInt workHours = 0.obs;
+
+  //当前工作总分钟数
+  late RxInt countMinutes = 0.obs;
+
   @override
   void onInit() {
     super.onInit();
+    showDate = DateTime.now();
     var start = getStringAsync(NOON_BREAK_START, defaultValue: '2000-10-10 11:30');
     var end = getStringAsync(NOON_BREAK_END, defaultValue: '2000-10-10 13:30');
+    workDays.value = getIntAsync(WORK_DAYS, defaultValue: 21);
+    workHours.value = getIntAsync(WORK_HOURS, defaultValue: 8);
+    workDaysController.text = workDays.value.toString();
+    workHoursController.text = workHours.value.toString();
     noonBreakStart.value = DateTime.parse(start);
     noonBreakEnd.value = DateTime.parse(end);
     updateNoonBreakDuration();
@@ -48,10 +69,11 @@ class HomeController extends GetxController with BaseControllerMixin {
   @override
   void onReady() async {
     super.onReady();
+    version.value = await getVersion();
     hiveBox = await Hive.openBox('events');
     _saveTime();
     _runClockTimer();
-    onPageChange(DateTime.now());
+    updateEvent();
   }
 
   void onPageChange(DateTime dateTime) {
@@ -64,6 +86,8 @@ class HomeController extends GetxController with BaseControllerMixin {
     _clockTimer?.cancel();
     _clockTimer = null;
     eventController.dispose();
+    workDaysController.dispose();
+    workHoursController.dispose();
     super.onClose();
   }
 
@@ -135,6 +159,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     for (int i = 0; i < daysInMonth; i++) {
       days.add(firstDayOfMonth.add(Duration(days: i)).toDateString());
     }
+    countMinutes.value = 0;
     // 从缓存中拿出全部数据
     for (String day in days) {
       Map? data = hiveBox.get(day, defaultValue: null);
@@ -144,6 +169,11 @@ class HomeController extends GetxController with BaseControllerMixin {
           date: DateTime.parse(day),
           event: data,
         );
+        String? start = data['start'] as String?;
+        String? end = data['end'] as String?;
+        if (start != null && end != null) {
+          countMinutes.value = countMinutes.value + getWorkDurationMinutes(start, end);
+        }
         eventController.add(calendarEventData);
       }
     }
@@ -161,8 +191,6 @@ class HomeController extends GetxController with BaseControllerMixin {
     String minutes = (difference.inMinutes % 60).toString().padLeft(2, '0');
     String seconds = (difference.inSeconds % 60).toString().padLeft(2, '0');
     noonBreakDuration.value = '$hours:$minutes:$seconds';
-    //同时刷新event
-    updateEvent();
   }
 
   //计算工时
@@ -273,5 +301,49 @@ class HomeController extends GetxController with BaseControllerMixin {
     final calendarEventData = eventController.getEventsOnDay(DateTime.parse(date.toDateString()));
     eventController.removeAll(calendarEventData);
     updateEvent();
+  }
+
+  void workDaysSave() {
+    String text = workDaysController.text;
+    int? number = int.tryParse(text);
+    if (number == null) {
+      showError('请输入有效的天数');
+      return;
+    }
+    if (number < 1 || number > 31) {
+      showError('请输入有效的天数');
+      return;
+    }
+    workDays.value = number;
+    setValue(WORK_DAYS, number);
+  }
+
+  void workHoursSave() {
+    String text = workHoursController.text;
+    int? number = int.tryParse(text);
+    if (number == null) {
+      showError('请输入有效的时长');
+      return;
+    }
+    if (number < 1 || number > 24) {
+      showError('请输入有效的时长');
+      return;
+    }
+    workHours.value = number;
+    setValue(WORK_HOURS, number);
+  }
+
+  int getWorkTimeMinutes() {
+    return workDays.value * workHours.value * 60;
+  }
+
+  //加班时长
+  int overtimeMinutes() {
+    int minutes = getWorkTimeMinutes();
+    if (countMinutes.value - minutes > 0) {
+      return countMinutes.value - minutes;
+    } else {
+      return 0;
+    }
   }
 }

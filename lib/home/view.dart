@@ -1,5 +1,6 @@
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:getx_scaffold/getx_scaffold.dart';
 import 'package:time_pickerr/time_pickerr.dart';
 import 'package:work_helper/theme.dart';
@@ -64,7 +65,7 @@ class HomePage extends GetView<HomeController> {
       ),
       Container(
         color: Colors.grey[300],
-        width: 1.w,
+        width: 2.w,
         height: 1.sh,
       ),
       _buildRightViews().expand(),
@@ -244,6 +245,8 @@ class HomePage extends GetView<HomeController> {
       ).alignTopRight(),
       ButtonX.outline(
         '清空今日数据',
+        textSize: 16.sp,
+        foregroundColor: Colors.red,
         onPressed: () {
           startTime.value = null;
           endTime.value = null;
@@ -303,7 +306,11 @@ class HomePage extends GetView<HomeController> {
     return Obx(
       () => <Widget>[
         <Widget>[
-          TextX.headlineSmall('当前时间：${controller.currentTime.value}'),
+          TextX.headlineSmall(
+            '当前时间：${controller.currentTime.value}',
+            weight: FontWeight.bold,
+            color: AppTheme.themeColor,
+          ),
           15.verticalSpace,
           <Widget>[
             TextX.titleLarge('今日上班时间：${controller.todayStartTime.value}'),
@@ -345,7 +352,7 @@ class HomePage extends GetView<HomeController> {
             .paddingAll(20.w)
             .card()
             .width(double.infinity),
-        3.verticalSpace,
+        5.verticalSpace,
         <Widget>[
           <Widget>[
             TextX.titleLarge('午休开始时间：'),
@@ -369,6 +376,7 @@ class HomePage extends GetView<HomeController> {
                       if (start.isBefore(end)) {
                         controller.noonBreakStart.value = time;
                         controller.updateNoonBreakDuration();
+                        controller.updateEvent();
                         setValue(HomeController.NOON_BREAK_START, time.toDateTimeString());
                         Get.back();
                       } else {
@@ -405,6 +413,7 @@ class HomePage extends GetView<HomeController> {
                       if (end.isAfter(start)) {
                         controller.noonBreakEnd.value = time;
                         controller.updateNoonBreakDuration();
+                        controller.updateEvent();
                         setValue(HomeController.NOON_BREAK_END, time.toDateTimeString());
                         Get.back();
                       } else {
@@ -428,12 +437,86 @@ class HomePage extends GetView<HomeController> {
             .paddingAll(20.w)
             .card()
             .width(double.infinity),
+        5.verticalSpace,
+        <Widget>[
+          TextField(
+            controller: controller.workDaysController,
+            keyboardType: TextInputType.number, // 只允许数字键盘
+            maxLength: 2,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
+            ],
+            decoration: InputDecoration(
+              labelText: '当月应上班天数',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.r), // 设置圆角
+                borderSide: BorderSide(color: AppTheme.themeColor, width: 2.sp),
+              ),
+              filled: true, // 是否填充背景色
+              fillColor: Colors.grey[100], // 填充背景色
+              suffix: ButtonX.secondary(
+                '保存',
+                onPressed: controller.workDaysSave,
+              ),
+              counter: Container(), // 隐藏字符计数
+            ),
+          ),
+          20.verticalSpace,
+          TextField(
+            controller: controller.workHoursController,
+            keyboardType: TextInputType.number, // 只允许数字键盘
+            maxLength: 2,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // 只允许输入数字
+            ],
+            decoration: InputDecoration(
+              labelText: '每日工作时长',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.r), // 设置圆角
+                borderSide: BorderSide(color: AppTheme.themeColor, width: 2.sp),
+              ),
+              filled: true, // 是否填充背景色
+              fillColor: Colors.grey[100], // 填充背景色
+              suffix: ButtonX.secondary(
+                '保存',
+                onPressed: controller.workHoursSave,
+              ),
+              counter: Container(), // 隐藏字符计数
+            ),
+          ),
+          20.verticalSpace,
+          TextX.titleLarge('当月满勤工时(分钟)：${controller.getWorkTimeMinutes()}'),
+          5.verticalSpace,
+          TextX.titleLarge('当月满勤工时(小时)：${controller.getWorkTimeMinutes() / 60}'),
+          20.verticalSpace,
+          TextX.titleLarge('当月有效工时(分钟)：${controller.countMinutes.value}'),
+          5.verticalSpace,
+          TextX.titleLarge('当月有效工时(小时)：${(controller.countMinutes.value / 60).toStringAsFixed(2)}'),
+          20.verticalSpace,
+          TextX.titleLarge('当月加班工时(分钟)：${controller.overtimeMinutes()}'),
+          5.verticalSpace,
+          TextX.titleLarge('当月加班工时(小时)：${(controller.overtimeMinutes() / 60).toStringAsFixed(2)}'),
+          10.verticalSpace,
+          TextX.titleLarge(
+            '当月加班工时(天数)：${(controller.overtimeMinutes() / 60 / controller.workHours.value).toStringAsFixed(2)}',
+            color: Colors.red,
+            weight: FontWeight.bold,
+          ),
+        ]
+            .toColumn(
+              crossAxisAlignment: CrossAxisAlignment.start,
+            )
+            .paddingAll(20.w)
+            .card()
+            .width(double.infinity),
+        TextX.bodyMedium('powered by Kxmrg').padding(top: 10.w).center(),
+        TextX.bodySmall('Ver.${controller.version}').padding(top: 3.w).center(),
       ]
           .toColumn(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.max,
           )
-          .padding(all: 5.w),
+          .padding(all: 8.w),
     );
   }
 
