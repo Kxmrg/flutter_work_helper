@@ -48,7 +48,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     hiveBox = await Hive.openBox('events');
     _saveTime();
     _runClockTimer();
-    setEvent(DateTime.now());
+    updateEvent(DateTime.now());
   }
 
   @override
@@ -91,12 +91,26 @@ class HomeController extends GetxController with BaseControllerMixin {
     }
   }
 
-  void updateEndTime() {
-    _saveTime();
-    setEvent(DateTime.now());
+  //更新当日上班时间
+  void updateStartTime(DateTime time) {
+    String nowDate = DateTime.now().toDateString();
+    todayStartTime.value = time.toTimeString();
+    var data = hiveBox.get(nowDate, defaultValue: null);
+    data['start'] = time.toTimeString();
+    hiveBox.put(
+      nowDate,
+      data,
+    );
+    updateEvent(DateTime.now());
   }
 
-  void setEvent(DateTime dateTime) async {
+  void updateEndTime() {
+    _saveTime();
+    updateEvent(DateTime.now());
+  }
+
+  //设置Event
+  void updateEvent(DateTime dateTime) async {
     // 获取当前月份的第一天
     DateTime firstDayOfMonth = DateTime(dateTime.year, dateTime.month, 1);
     // 获取下个月的第一天
@@ -122,16 +136,80 @@ class HomeController extends GetxController with BaseControllerMixin {
     }
   }
 
+  //获取午休时长
   int getNoonBreakDuration() {
     Duration difference = noonBreakEnd.value.difference(noonBreakStart.value);
     return difference.inMinutes;
   }
 
+  //更新午休时长
   void updateNoonBreakDuration() {
     Duration difference = noonBreakEnd.value.difference(noonBreakStart.value);
     String hours = difference.inHours.toString().padLeft(2, '0');
     String minutes = (difference.inMinutes % 60).toString().padLeft(2, '0');
     String seconds = (difference.inSeconds % 60).toString().padLeft(2, '0');
     noonBreakDuration.value = '$hours:$minutes:$seconds';
+  }
+
+  //计算工时
+  Duration getWorkDuration(String startTime, String endTime) {
+    //午休开始时间
+    DateTime noonStart = timeToDateTime(noonBreakStart.value.toTimeString());
+    //午休结束时间
+    DateTime noonEnd = timeToDateTime(noonBreakEnd.value.toTimeString());
+    //将传入的Datetime调整为同一天
+    DateTime start = timeToDateTime(startTime);
+    DateTime end = timeToDateTime(endTime);
+    //最终的计算时间
+    DateTime computeStart;
+    DateTime computeEnd;
+    bool isNoonBreak = false;
+    if ((start.isBefore(noonStart) && end.isBefore(noonStart)) ||
+        (start.isAfter(noonEnd) && end.isAfter(noonEnd))) {
+      //开始结束时间都在午休之前 或者 开始结束时间都在午休之后 最终的计算时间就是传入的时间
+      computeStart = start;
+      computeEnd = end;
+    } else if (start.isBefore(noonStart) && end.isBefore(noonEnd)) {
+      //开始时间在午休之前 结束时间在午休结束之前 结束时间将改为 午休开始时间
+      computeStart = start;
+      computeEnd = noonStart;
+    } else if (start.isBefore(noonEnd) && end.isAfter(noonEnd)) {
+      //开始时间在午休结束之前 结束时间在午休结束之后 开始时间将改为 午休结束时间
+      computeStart = noonEnd;
+      computeEnd = end;
+    } else if (start.isBefore(noonStart) && end.isAfter(noonEnd)) {
+      //开始时间在午休之前 结束时间在午休之后 正常情况 减去2小时午休
+      computeStart = start;
+      computeEnd = end;
+      isNoonBreak = true;
+    } else {
+      //开始时间在午休开始之后 结束时间在午休结束之前 没有工时
+      return const Duration(seconds: 0);
+    }
+    Duration difference = computeEnd.difference(computeStart);
+    if (isNoonBreak) {
+      difference = difference - const Duration(hours: 2);
+    }
+    return difference;
+  }
+
+  //返回工时分钟数
+  int getWorkDurationMinutes(String start, String end) {
+    Duration duration = getWorkDuration(start, end);
+    return duration.inMinutes;
+  }
+
+  //返回工时字符串
+  String getWorkDurationString(String start, String end) {
+    Duration duration = getWorkDuration(start, end);
+    String hours = duration.inHours.toString().padLeft(2, '0');
+    String minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
+    String seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
+
+  //时间字符串转DateTime
+  DateTime timeToDateTime(String time) {
+    return DateTime.parse('2000-10-10 $time');
   }
 }
