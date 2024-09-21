@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -12,7 +14,7 @@ class AppTheme {
   /// 亮色主题样式
   static ThemeData light = ThemeData(
     useMaterial3: false,
-    fontFamily: Font_AlibabaHealth,
+    fontFamily: Platform.isWindows ? Font_AlibabaHealth : Font_Montserrat,
     colorScheme: ColorScheme.fromSeed(
       seedColor: themeColor,
       primary: themeColor,

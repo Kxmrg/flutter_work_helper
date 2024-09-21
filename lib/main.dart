@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:getx_scaffold/getx_scaffold.dart';
@@ -19,11 +21,12 @@ void main() async {
   await windowManager.ensureInitialized();
   await Hive.initFlutter();
   Size size = const Size(WINDOW_WIDTH, WINDOW_HEIGHT);
+
   WindowOptions windowOptions = WindowOptions(
     size: size,
     minimumSize: size,
     center: true,
-    backgroundColor: Colors.transparent,
+    backgroundColor: Platform.isWindows ? Colors.transparent : Colors.white,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
     title: APP_NAME,
