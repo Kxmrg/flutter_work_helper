@@ -23,7 +23,7 @@ void main() async {
     size: size,
     minimumSize: size,
     center: true,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.transparent,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
     title: APP_NAME,

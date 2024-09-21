@@ -12,7 +12,7 @@ class AppTheme {
   /// 亮色主题样式
   static ThemeData light = ThemeData(
     useMaterial3: false,
-    fontFamily: Font_Montserrat,
+    fontFamily: Font_AlibabaHealth,
     colorScheme: ColorScheme.fromSeed(
       seedColor: themeColor,
       primary: themeColor,
