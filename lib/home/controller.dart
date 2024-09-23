@@ -91,6 +91,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     super.onClose();
   }
 
+  //时钟
   void _runClockTimer() {
     _clockTimer = Timer.periodic(
       const Duration(seconds: 1),
@@ -100,6 +101,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     );
   }
 
+  //记录当前时间
   void _saveTime() {
     String nowDate = DateTime.now().toDateString();
     String nowTime = DateTime.now().toTimeString();
@@ -124,6 +126,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     }
   }
 
+  //获取指定日期的缓存
   Map? getEvent(DateTime date) {
     return hiveBox.get(date.toDateString(), defaultValue: null);
   }
@@ -141,6 +144,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     updateEvent();
   }
 
+  //更新下班时间
   void updateEndTime() {
     _saveTime();
     updateEvent();
@@ -296,6 +300,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     updateEvent();
   }
 
+  //清空指定日期的数据
   void cleanData(DateTime date) async {
     await hiveBox.delete(date.toDateString());
     final calendarEventData = eventController.getEventsOnDay(DateTime.parse(date.toDateString()));
@@ -303,6 +308,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     updateEvent();
   }
 
+  //保存应上班天数
   void workDaysSave() {
     String text = workDaysController.text;
     int? number = int.tryParse(text);
@@ -318,6 +324,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     setValue(WORK_DAYS, number);
   }
 
+  //保存每日工时
   void workHoursSave() {
     String text = workHoursController.text;
     int? number = int.tryParse(text);
@@ -333,6 +340,7 @@ class HomeController extends GetxController with BaseControllerMixin {
     setValue(WORK_HOURS, number);
   }
 
+  //正常工时
   int getWorkTimeMinutes() {
     return workDays.value * workHours.value * 60;
   }
