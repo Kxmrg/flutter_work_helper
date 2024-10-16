@@ -210,8 +210,8 @@ class HomeController extends GetxController with BaseControllerMixin {
     DateTime computeStart;
     DateTime computeEnd;
     bool isNoonBreak = false;
-    if ((start.isBefore(noonStart) && end.isBefore(noonStart)) ||
-        (start.isAfter(noonEnd) && end.isAfter(noonEnd))) {
+    if ((start.isBefore(noonStart) && (end.isBefore(noonStart) || end == noonStart)) ||
+        ((start.isAfter(noonEnd) || start == noonEnd) && end.isAfter(noonEnd))) {
       //开始结束时间都在午休之前 或者 开始结束时间都在午休之后 最终的计算时间就是传入的时间
       computeStart = start;
       computeEnd = end;
