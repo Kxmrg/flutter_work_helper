@@ -215,11 +215,13 @@ class HomeController extends GetxController with BaseControllerMixin {
       //开始结束时间都在午休之前 或者 开始结束时间都在午休之后 最终的计算时间就是传入的时间
       computeStart = start;
       computeEnd = end;
-    } else if (start.isBefore(noonStart) && end.isBefore(noonEnd)) {
+    } else if (start.isBefore(noonStart) && (end.isBefore(noonEnd) || end == noonEnd)) {
       //开始时间在午休之前 结束时间在午休结束之前 结束时间将改为 午休开始时间
       computeStart = start;
       computeEnd = noonStart;
-    } else if (start.isAfter(noonStart) && start.isBefore(noonEnd) && end.isAfter(noonEnd)) {
+    } else if ((start.isAfter(noonStart) || start == noonStart) &&
+        (start.isBefore(noonEnd) || start == noonEnd) &&
+        end.isAfter(noonEnd)) {
       //开始时间在午休之后 午休结束之前 结束时间在午休结束之后 开始时间将改为 午休结束时间
       computeStart = noonEnd;
       computeEnd = end;
