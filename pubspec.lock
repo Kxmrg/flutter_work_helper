@@ -286,7 +286,7 @@ packages:
       path: "../getx_scaffold"
       relative: true
     source: path
-    version: "0.2.1"
+    version: "0.2.2"
   hive:
     dependency: "direct main"
     description:
