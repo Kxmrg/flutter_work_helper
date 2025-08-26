@@ -10,8 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  getx_scaffold:
-    path: ../getx_scaffold
+  getx_scaffold: ^0.2.2
   window_manager: ^0.4.2
   calendar_view: ^1.2.0
   hive: ^2.2.3

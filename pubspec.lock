@@ -283,9 +283,10 @@ packages:
   getx_scaffold:
     dependency: "direct main"
     description:
-      path: "../getx_scaffold"
-      relative: true
-    source: path
+      name: getx_scaffold
+      sha256: caf11b370c20840352230f50221bcef1454b30ec56cce10ba25741fbbdf0a806
+      url: "https://pub.flutter-io.cn"
+    source: hosted
     version: "0.2.2"
   hive:
     dependency: "direct main"
